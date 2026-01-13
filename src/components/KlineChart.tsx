@@ -76,6 +76,10 @@ const KlineChart = ({ symbol }: KlineChartProps) => {
         timeVisible: true,
         secondsVisible: false,
       },
+      localization: {
+        locale: 'en-US',
+        dateFormat: 'MMM dd, yyyy',
+      },
     });
 
     chartRef.current = chart;

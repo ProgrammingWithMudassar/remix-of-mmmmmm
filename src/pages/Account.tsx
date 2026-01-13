@@ -14,12 +14,18 @@ import {
   ChevronRight,
   Wallet,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  UserCheck,
+  FileText,
+  CheckCircle2,
+  XCircle,
+  Loader2
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useAssets } from '@/contexts/AssetsContext';
 import { useCryptoPrices } from '@/hooks/useCryptoPrices';
 import { toast } from 'sonner';
@@ -37,8 +43,9 @@ import {
   TabsTrigger,
 } from '@/components/ui/tabs';
 import { useLoan } from '@/contexts/LoanContext';
+import { useKYC } from '@/contexts/KYCContext';
 
-type AccountView = 'overview' | 'withdraw' | 'recharge' | 'exchange';
+type AccountView = 'overview' | 'withdraw' | 'recharge' | 'exchange' | 'verification';
 
 const CRYPTO_ASSETS = [
   { symbol: 'BTC', name: 'Bitcoin', icon: '₿', color: 'bg-orange-500' },
@@ -85,9 +92,17 @@ const Account = () => {
   const [toCurrency, setToCurrency] = useState('btc');
   const [exchangeAmount, setExchangeAmount] = useState('');
   
+  // KYC state
+  const [kycName, setKycName] = useState('');
+  const [kycIdNumber, setKycIdNumber] = useState('');
+  const [kycIdType, setKycIdType] = useState<'passport' | 'driver_license' | 'national_id' | 'other'>('passport');
+  const [kycIdImage, setKycIdImage] = useState<string | null>(null);
+  const [kycIdFileName, setKycIdFileName] = useState('');
+  
   const { assets, getBalance } = useAssets();
   const { getPrice } = useCryptoPrices();
   const { loans } = useLoan();
+  const { kycData, submitKYC, isVerified } = useKYC();
 
   // Check if user has active loans
   const hasActiveLoan = loans.some(loan => loan.status === 'active');
@@ -182,6 +197,7 @@ const Account = () => {
       withdraw: 'Withdraw',
       recharge: 'Recharge',
       exchange: 'Exchange',
+      verification: 'Identity Verification',
     };
 
     return (
@@ -237,7 +253,7 @@ const Account = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-4 gap-4">
           <button 
             onClick={() => setCurrentView('withdraw')}
             className="flex flex-col items-center gap-3 p-4 bg-muted/30 hover:bg-muted/50 rounded-xl border border-border transition-all group"
@@ -264,6 +280,37 @@ const Account = () => {
               <ArrowLeftRight className="w-5 h-5" />
             </div>
             <span className="text-sm font-medium uppercase tracking-wider">Exchange</span>
+          </button>
+          <button 
+            onClick={() => setCurrentView('verification')}
+            className="flex flex-col items-center gap-3 p-4 bg-muted/30 hover:bg-muted/50 rounded-xl border border-border transition-all group relative"
+          >
+            <div className={`w-12 h-12 rounded-full border-2 flex items-center justify-center transition-colors ${
+              kycData.status === 'approved' 
+                ? 'border-green-500 bg-green-500/10' 
+                : kycData.status === 'pending'
+                ? 'border-yellow-500 bg-yellow-500/10'
+                : 'border-foreground/20 group-hover:border-primary group-hover:bg-primary/10'
+            }`}>
+              <UserCheck className={`w-5 h-5 ${
+                kycData.status === 'approved' 
+                  ? 'text-green-500' 
+                  : kycData.status === 'pending'
+                  ? 'text-yellow-500'
+                  : ''
+              }`} />
+            </div>
+            <span className="text-sm font-medium uppercase tracking-wider">Verify</span>
+            {kycData.status === 'approved' && (
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
+                <Check className="w-3 h-3 text-white" />
+              </div>
+            )}
+            {kycData.status === 'pending' && (
+              <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
+                <Loader2 className="w-3 h-3 text-white animate-spin" />
+              </div>
+            )}
           </button>
         </div>
       </div>
@@ -680,6 +727,221 @@ const Account = () => {
     );
   };
 
+  const handleKycImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size must be less than 5MB');
+        return;
+      }
+      setKycIdFileName(file.name);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setKycIdImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleKycSubmit = () => {
+    if (!kycName.trim()) {
+      toast.error('Please enter your full name');
+      return;
+    }
+    if (!kycIdNumber.trim()) {
+      toast.error('Please enter your ID number');
+      return;
+    }
+    if (!kycIdImage) {
+      toast.error('Please upload your ID document');
+      return;
+    }
+
+    submitKYC({
+      fullName: kycName.trim(),
+      idNumber: kycIdNumber.trim(),
+      idType: kycIdType,
+      idImage: kycIdImage,
+    });
+
+    toast.success('Identity verification submitted. Please wait for approval.');
+    setKycName('');
+    setKycIdNumber('');
+    setKycIdImage(null);
+    setKycIdFileName('');
+  };
+
+  const renderVerification = () => {
+    const idTypeLabels = {
+      passport: 'Passport',
+      driver_license: "Driver's License",
+      national_id: 'National ID Card',
+      other: 'Other ID Document',
+    };
+
+    return (
+      <div className="max-w-2xl mx-auto space-y-6">
+        {/* Status Card */}
+        {kycData.status !== 'not_submitted' && (
+          <div className={`rounded-2xl p-6 border ${
+            kycData.status === 'approved' 
+              ? 'bg-green-500/10 border-green-500/30' 
+              : kycData.status === 'pending'
+              ? 'bg-yellow-500/10 border-yellow-500/30'
+              : 'bg-red-500/10 border-red-500/30'
+          }`}>
+            <div className="flex items-center gap-3">
+              {kycData.status === 'approved' && <CheckCircle2 className="w-6 h-6 text-green-500" />}
+              {kycData.status === 'pending' && <Loader2 className="w-6 h-6 text-yellow-500 animate-spin" />}
+              {kycData.status === 'rejected' && <XCircle className="w-6 h-6 text-red-500" />}
+              <div>
+                <p className="font-semibold">
+                  {kycData.status === 'approved' && 'Identity Verified'}
+                  {kycData.status === 'pending' && 'Verification Pending'}
+                  {kycData.status === 'rejected' && 'Verification Rejected'}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {kycData.status === 'approved' && `Verified as: ${kycData.fullName}`}
+                  {kycData.status === 'pending' && 'Your documents are being reviewed. This usually takes 1-3 business days.'}
+                  {kycData.status === 'rejected' && 'Please submit valid documents again.'}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Verification Form */}
+        {(kycData.status === 'not_submitted' || kycData.status === 'rejected') && (
+          <div className="bg-card border border-border rounded-2xl p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <UserCheck className="w-5 h-5 text-primary" />
+              <h3 className="font-semibold text-lg">Identity Verification (KYC)</h3>
+            </div>
+
+            <div className="space-y-6">
+              {/* Full Name */}
+              <div className="space-y-2">
+                <Label>Full Name (as shown on ID)</Label>
+                <Input
+                  type="text"
+                  placeholder="Enter your full legal name"
+                  value={kycName}
+                  onChange={(e) => setKycName(e.target.value)}
+                />
+              </div>
+
+              {/* ID Type Selection */}
+              <div className="space-y-2">
+                <Label>ID Document Type</Label>
+                <Select value={kycIdType} onValueChange={(v) => setKycIdType(v as any)}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="passport">Passport</SelectItem>
+                    <SelectItem value="driver_license">Driver's License</SelectItem>
+                    <SelectItem value="national_id">National ID Card</SelectItem>
+                    <SelectItem value="other">Other ID Document</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* ID Number */}
+              <div className="space-y-2">
+                <Label>ID Number</Label>
+                <Input
+                  type="text"
+                  placeholder="Enter your ID number"
+                  value={kycIdNumber}
+                  onChange={(e) => setKycIdNumber(e.target.value)}
+                />
+              </div>
+
+              {/* ID Document Upload */}
+              <div className="space-y-2">
+                <Label>Upload ID Document</Label>
+                <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleKycImageUpload}
+                    className="hidden"
+                    id="kyc-upload"
+                  />
+                  <label htmlFor="kyc-upload" className="cursor-pointer">
+                    {kycIdImage ? (
+                      <div className="space-y-3">
+                        <div className="w-full max-w-xs mx-auto">
+                          <img 
+                            src={kycIdImage} 
+                            alt="ID Preview" 
+                            className="w-full h-auto rounded-lg border border-border"
+                          />
+                        </div>
+                        <p className="text-sm text-muted-foreground">{kycIdFileName}</p>
+                        <p className="text-xs text-primary">Click to change</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        <div className="w-12 h-12 rounded-full bg-muted/50 flex items-center justify-center mx-auto">
+                          <FileText className="w-6 h-6 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <p className="font-medium">Upload ID Document</p>
+                          <p className="text-sm text-muted-foreground">
+                            Click to upload a clear photo of your ID
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </label>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Accepted formats: JPG, PNG, PDF. Max size: 5MB
+                </p>
+              </div>
+
+              {/* Submit Button */}
+              <Button 
+                onClick={handleKycSubmit}
+                className="w-full bg-foreground text-background hover:bg-foreground/90 py-6 text-lg font-medium"
+              >
+                Submit Verification
+                <ChevronRight className="w-5 h-5 ml-2" />
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Info Card */}
+        <div className="bg-card border border-border rounded-2xl p-6">
+          <h3 className="font-semibold mb-4 flex items-center gap-2">
+            <div className="w-1 h-5 bg-primary rounded-full"></div>
+            Why Verify Your Identity?
+          </h3>
+          <div className="space-y-3 text-sm">
+            <div className="flex items-start gap-3">
+              <Info className="w-4 h-4 text-muted-foreground mt-0.5" />
+              <span>Required for loan applications and higher withdrawal limits</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <Info className="w-4 h-4 text-muted-foreground mt-0.5" />
+              <span>Protects your account from unauthorized access</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <Info className="w-4 h-4 text-muted-foreground mt-0.5" />
+              <span>Complies with financial regulations</span>
+            </div>
+            <div className="flex items-start gap-3">
+              <Clock className="w-4 h-4 text-muted-foreground mt-0.5" />
+              <span>Verification usually takes 1-3 business days</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -692,6 +954,7 @@ const Account = () => {
           {currentView === 'withdraw' && renderWithdraw()}
           {currentView === 'recharge' && renderRecharge()}
           {currentView === 'exchange' && renderExchange()}
+          {currentView === 'verification' && renderVerification()}
         </div>
       </main>
 
