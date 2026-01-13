@@ -263,7 +263,7 @@ const TradingPanel = ({ symbol, currentPrice }: TradingPanelProps) => {
           className={`flex-1 ${direction === 'long' ? 'bg-[hsl(145,60%,45%)] hover:bg-[hsl(145,60%,40%)] text-white' : ''}`}
         >
           <TrendingUp className="w-4 h-4 mr-2" />
-          Long (买涨)
+          Long
         </Button>
         <Button
           variant={direction === 'short' ? 'default' : 'outline'}
@@ -271,7 +271,7 @@ const TradingPanel = ({ symbol, currentPrice }: TradingPanelProps) => {
           className={`flex-1 ${direction === 'short' ? 'bg-[hsl(0,70%,55%)] hover:bg-[hsl(0,70%,50%)] text-white' : ''}`}
         >
           <TrendingDown className="w-4 h-4 mr-2" />
-          Short (买跌)
+          Short
         </Button>
       </div>
 
@@ -354,17 +354,9 @@ const TradingPanel = ({ symbol, currentPrice }: TradingPanelProps) => {
               : 'bg-[hsl(0,70%,55%)] hover:bg-[hsl(0,70%,50%)]'
           } text-white`}
         >
-          {direction === 'long' ? (
-            <>
-              <TrendingUp className="w-4 h-4 mr-2" />
-              Open Long Position
-            </>
-          ) : (
-            <>
-              <TrendingDown className="w-4 h-4 mr-2" />
-              Open Short Position
-            </>
-          )}
+          <TrendingUp className="w-4 h-4 mr-2" />
+          Buy Now
+        
         </Button>
       </div>
     </div>
