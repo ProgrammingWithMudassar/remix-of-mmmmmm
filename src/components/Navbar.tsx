@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { ChevronDown, Menu, X } from 'lucide-react';
+import { ChevronDown, Menu, X, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import ThemeToggle from '@/components/ThemeToggle';
 import MetaMaskLogo from '@/components/MetaMaskLogo';
+import { useTawkTo } from '@/hooks/useTawkTo';
 
 const navItems = [
   { label: 'Home', href: '/' },
@@ -15,6 +16,7 @@ const navItems = [
 
 const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { openChat } = useTawkTo();
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
@@ -44,9 +46,12 @@ const Navbar = () => {
           {/* Right Side Actions */}
           <div className="hidden lg:flex items-center gap-3">
             <ThemeToggle />
-            <button className="nav-link flex items-center gap-1">
+            <button 
+              onClick={openChat}
+              className="nav-link flex items-center gap-1 hover:text-primary transition-colors"
+            >
+              <MessageCircle className="w-4 h-4" />
               Customer Service
-              <ChevronDown className="w-4 h-4" />
             </button>
             <Link to="/auth">
               <Button variant="outline" className="btn-outline border-foreground/20">
