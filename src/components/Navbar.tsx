@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import ThemeToggle from '@/components/ThemeToggle';
 import MetaMaskLogo from '@/components/MetaMaskLogo';
+import NotificationBell from '@/components/NotificationBell';
 import { useTawkTo } from '@/hooks/useTawkTo';
 
 const navItems = [
@@ -45,6 +46,7 @@ const Navbar = () => {
 
           {/* Right Side Actions */}
           <div className="hidden lg:flex items-center gap-3">
+            <NotificationBell />
             <ThemeToggle />
             <button 
               onClick={openChat}
@@ -67,6 +69,7 @@ const Navbar = () => {
 
           {/* Mobile Menu Button */}
           <div className="lg:hidden flex items-center gap-2">
+            <NotificationBell />
             <ThemeToggle />
             <button
               className="p-2"
