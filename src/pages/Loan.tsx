@@ -1,5 +1,6 @@
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import BottomNav from '@/components/BottomNav';
 import LoanApplication from '@/components/LoanApplication';
 import LoanRepayment from '@/components/LoanRepayment';
 import LoanHistory from '@/components/LoanHistory';
@@ -9,7 +10,7 @@ import { MIN_LOAN_AMOUNT, MAX_LOAN_AMOUNT } from '@/contexts/LoanContext';
 
 const Loan = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-16 lg:pb-0">
       <Navbar />
       <main className="pt-20 lg:pt-24 pb-12">
         <div className="container mx-auto px-4 lg:px-8">
@@ -90,6 +91,7 @@ const Loan = () => {
         </div>
       </main>
       <Footer />
+      <BottomNav />
     </div>
   );
 };
