@@ -22,9 +22,9 @@ const TradeHistory = () => {
 
   const formatDuration = (seconds: number) => {
     if (seconds >= 60) {
-      return `${Math.floor(seconds / 60)}分钟`;
+      return `${Math.floor(seconds / 60)} min`;
     }
-    return `${seconds}秒`;
+    return `${seconds}s`;
   };
 
   return (

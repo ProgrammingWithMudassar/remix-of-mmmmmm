@@ -2,6 +2,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, TrendingUp, TrendingDown, ChevronDown, AlertTriangle } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import BottomNav from '@/components/BottomNav';
 import KlineChart from '@/components/KlineChart';
 import TradingPanel from '@/components/TradingPanel';
 import UserAssets from '@/components/UserAssets';
@@ -34,7 +35,7 @@ const TradePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-16 lg:pb-0">
       <Navbar />
       
       <main className="pt-20 lg:pt-24 pb-16">
@@ -131,6 +132,7 @@ const TradePage = () => {
       </main>
 
       <Footer />
+      <BottomNav />
     </div>
   );
 };

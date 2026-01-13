@@ -22,6 +22,7 @@ import {
   Loader2
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
+import BottomNav from '@/components/BottomNav';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -253,46 +254,46 @@ const Account = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-4 gap-2 md:gap-4">
           <button 
             onClick={() => setCurrentView('withdraw')}
-            className="flex flex-col items-center gap-3 p-4 bg-muted/30 hover:bg-muted/50 rounded-xl border border-border transition-all group"
+            className="flex flex-col items-center gap-2 md:gap-3 p-2 md:p-4 bg-muted/30 hover:bg-muted/50 rounded-xl border border-border transition-all group"
           >
-            <div className="w-12 h-12 rounded-full border-2 border-foreground/20 flex items-center justify-center group-hover:border-primary group-hover:bg-primary/10 transition-colors">
-              <ArrowUpRight className="w-5 h-5" />
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-foreground/20 flex items-center justify-center group-hover:border-primary group-hover:bg-primary/10 transition-colors">
+              <ArrowUpRight className="w-4 h-4 md:w-5 md:h-5" />
             </div>
-            <span className="text-sm font-medium uppercase tracking-wider">Withdraw</span>
+            <span className="text-[10px] md:text-sm font-medium uppercase tracking-wider">Withdraw</span>
           </button>
           <button 
             onClick={() => setCurrentView('recharge')}
-            className="flex flex-col items-center gap-3 p-4 bg-muted/30 hover:bg-muted/50 rounded-xl border border-border transition-all group"
+            className="flex flex-col items-center gap-2 md:gap-3 p-2 md:p-4 bg-muted/30 hover:bg-muted/50 rounded-xl border border-border transition-all group"
           >
-            <div className="w-12 h-12 rounded-full border-2 border-foreground/20 flex items-center justify-center group-hover:border-primary group-hover:bg-primary/10 transition-colors">
-              <ArrowDownLeft className="w-5 h-5" />
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-foreground/20 flex items-center justify-center group-hover:border-primary group-hover:bg-primary/10 transition-colors">
+              <ArrowDownLeft className="w-4 h-4 md:w-5 md:h-5" />
             </div>
-            <span className="text-sm font-medium uppercase tracking-wider">Recharge</span>
+            <span className="text-[10px] md:text-sm font-medium uppercase tracking-wider">Recharge</span>
           </button>
           <button 
             onClick={() => setCurrentView('exchange')}
-            className="flex flex-col items-center gap-3 p-4 bg-muted/30 hover:bg-muted/50 rounded-xl border border-border transition-all group"
+            className="flex flex-col items-center gap-2 md:gap-3 p-2 md:p-4 bg-muted/30 hover:bg-muted/50 rounded-xl border border-border transition-all group"
           >
-            <div className="w-12 h-12 rounded-full border-2 border-foreground/20 flex items-center justify-center group-hover:border-primary group-hover:bg-primary/10 transition-colors">
-              <ArrowLeftRight className="w-5 h-5" />
+            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full border-2 border-foreground/20 flex items-center justify-center group-hover:border-primary group-hover:bg-primary/10 transition-colors">
+              <ArrowLeftRight className="w-4 h-4 md:w-5 md:h-5" />
             </div>
-            <span className="text-sm font-medium uppercase tracking-wider">Exchange</span>
+            <span className="text-[10px] md:text-sm font-medium uppercase tracking-wider">Exchange</span>
           </button>
           <button 
             onClick={() => setCurrentView('verification')}
-            className="flex flex-col items-center gap-3 p-4 bg-muted/30 hover:bg-muted/50 rounded-xl border border-border transition-all group relative"
+            className="flex flex-col items-center gap-2 md:gap-3 p-2 md:p-4 bg-muted/30 hover:bg-muted/50 rounded-xl border border-border transition-all group relative"
           >
-            <div className={`w-12 h-12 rounded-full border-2 flex items-center justify-center transition-colors ${
+            <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full border-2 flex items-center justify-center transition-colors ${
               kycData.status === 'approved' 
                 ? 'border-green-500 bg-green-500/10' 
                 : kycData.status === 'pending'
                 ? 'border-yellow-500 bg-yellow-500/10'
                 : 'border-foreground/20 group-hover:border-primary group-hover:bg-primary/10'
             }`}>
-              <UserCheck className={`w-5 h-5 ${
+              <UserCheck className={`w-4 h-4 md:w-5 md:h-5 ${
                 kycData.status === 'approved' 
                   ? 'text-green-500' 
                   : kycData.status === 'pending'
@@ -300,15 +301,15 @@ const Account = () => {
                   : ''
               }`} />
             </div>
-            <span className="text-sm font-medium uppercase tracking-wider">Verify</span>
+            <span className="text-[10px] md:text-sm font-medium uppercase tracking-wider">Verify</span>
             {kycData.status === 'approved' && (
-              <div className="absolute -top-1 -right-1 w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                <Check className="w-3 h-3 text-white" />
+              <div className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-green-500 rounded-full flex items-center justify-center">
+                <Check className="w-2.5 h-2.5 md:w-3 md:h-3 text-white" />
               </div>
             )}
             {kycData.status === 'pending' && (
-              <div className="absolute -top-1 -right-1 w-5 h-5 bg-yellow-500 rounded-full flex items-center justify-center">
-                <Loader2 className="w-3 h-3 text-white animate-spin" />
+              <div className="absolute -top-1 -right-1 w-4 h-4 md:w-5 md:h-5 bg-yellow-500 rounded-full flex items-center justify-center">
+                <Loader2 className="w-2.5 h-2.5 md:w-3 md:h-3 text-white animate-spin" />
               </div>
             )}
           </button>
@@ -943,7 +944,7 @@ const Account = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-16 lg:pb-0">
       <Navbar />
       
       <main className="pt-20 lg:pt-24 pb-16">
@@ -959,6 +960,7 @@ const Account = () => {
       </main>
 
       <Footer />
+      <BottomNav />
     </div>
   );
 };
