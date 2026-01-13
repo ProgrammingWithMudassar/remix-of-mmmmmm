@@ -1,7 +1,7 @@
 import { Globe } from 'lucide-react';
 
 const footerLinks = {
-  Products: ['Spot Trading', 'Margin Trading', 'Derivatives', 'Loans', 'NFTs'],
+  Products: ['Spot Trading', 'Margin Trading', 'Derivatives', 'Loans'],
   Services: ['Smart Trading', 'Copy Trading', 'API', 'Mobile App'],
   Support: ['Help Center', 'Contact Us', 'FAQ', 'Fees'],
   Legal: ['Privacy Policy', 'Terms of Service', 'Cookies Policy', 'Risk Disclosure'],

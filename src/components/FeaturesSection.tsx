@@ -1,4 +1,5 @@
-import { ArrowRight, TrendingUp, Coins, Zap, Heart } from 'lucide-react';
+import { ArrowRight, TrendingUp, Coins, Zap } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const features = [
   {
@@ -7,13 +8,15 @@ const features = [
     title: 'Trade all crypto in one place',
     description: 'BTC, ETH, SOL, XRP, and 350+ cryptocurrencies',
     color: 'bg-blue-500/10 text-blue-600',
+    link: '/trade/BTC',
   },
   {
     icon: Coins,
-    badge: 'Low interest rate and higher amount',
+    badge: '7 days interest-free',
     title: 'Cryptocurrency loans',
-    description: 'Borrow cryptocurrency spots without any collateral',
+    description: 'Borrow crypto with low interest. Max 15 days loan period.',
     color: 'bg-green-500/10 text-green-600',
+    link: '/loan',
   },
   {
     icon: Zap,
@@ -21,13 +24,7 @@ const features = [
     title: 'Smart trading',
     description: 'One click to create your earning plan',
     color: 'bg-primary/10 text-primary',
-  },
-  {
-    icon: Heart,
-    badge: 'Help children around the world',
-    title: 'NFTs charity',
-    description: 'Buy NFT artwork to support UNICEF',
-    color: 'bg-pink-500/10 text-pink-600',
+    link: '/trade/BTC',
   },
 ];
 
@@ -35,7 +32,7 @@ const FeaturesSection = () => {
   return (
     <section className="py-16 lg:py-24">
       <div className="container mx-auto px-4 lg:px-8">
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {features.map((feature, index) => (
             <div 
               key={index} 
@@ -52,13 +49,13 @@ const FeaturesSection = () => {
               
               <p className="text-sm text-muted-foreground mb-4">{feature.description}</p>
               
-              <a 
-                href="#" 
+              <Link 
+                to={feature.link}
                 className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:gap-2 transition-all duration-200"
               >
                 Get started
                 <ArrowRight className="w-4 h-4" />
-              </a>
+              </Link>
             </div>
           ))}
         </div>
