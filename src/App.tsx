@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AssetsProvider } from "@/contexts/AssetsContext";
 import { LoanProvider } from "@/contexts/LoanContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 import Index from "./pages/Index";
 import Trade from "./pages/Trade";
 import Loan from "./pages/Loan";
@@ -20,21 +21,23 @@ const App = () => (
     <ThemeProvider>
       <AssetsProvider>
         <LoanProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/trade/:symbol" element={<Trade />} />
-              <Route path="/loan" element={<Loan />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/account" element={<Account />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
+          <NotificationProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/trade/:symbol" element={<Trade />} />
+                <Route path="/loan" element={<Loan />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/account" element={<Account />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+                </Routes>
+              </BrowserRouter>
+            </TooltipProvider>
+          </NotificationProvider>
         </LoanProvider>
       </AssetsProvider>
     </ThemeProvider>
