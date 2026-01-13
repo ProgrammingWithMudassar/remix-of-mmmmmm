@@ -8,8 +8,7 @@ const navItems = [
   { label: 'Home', href: '/' },
   { label: 'Market', href: '/#market' },
   { label: 'Smart trading', href: '/trade/BTC' },
-  { label: 'Loan', href: '#' },
-  { label: 'NFTs', href: '#' },
+  { label: 'Loan', href: '/loan' },
   { label: 'Account', href: '#' },
 ];
 
