@@ -8,6 +8,7 @@ import { AssetsProvider } from "@/contexts/AssetsContext";
 import { LoanProvider } from "@/contexts/LoanContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
 import { TradeHistoryProvider } from "@/contexts/TradeHistoryContext";
+import { KYCProvider } from "@/contexts/KYCContext";
 import Index from "./pages/Index";
 import Trade from "./pages/Trade";
 import Loan from "./pages/Loan";
@@ -24,21 +25,23 @@ const App = () => (
         <LoanProvider>
           <NotificationProvider>
             <TradeHistoryProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter>
-                  <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/trade/:symbol" element={<Trade />} />
-                  <Route path="/loan" element={<Loan />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/account" element={<Account />} />
-                  {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                  <Route path="*" element={<NotFound />} />
-                  </Routes>
-                </BrowserRouter>
-              </TooltipProvider>
+              <KYCProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <Sonner />
+                  <BrowserRouter>
+                    <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/trade/:symbol" element={<Trade />} />
+                    <Route path="/loan" element={<Loan />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/account" element={<Account />} />
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                    </Routes>
+                  </BrowserRouter>
+                </TooltipProvider>
+              </KYCProvider>
             </TradeHistoryProvider>
           </NotificationProvider>
         </LoanProvider>

@@ -1,11 +1,13 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useLoan, MIN_LOAN_AMOUNT, MAX_LOAN_AMOUNT } from '@/contexts/LoanContext';
+import { useKYC } from '@/contexts/KYCContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { Coins, Clock, Info, Shield } from 'lucide-react';
+import { Coins, Clock, Info, Shield, AlertTriangle } from 'lucide-react';
 
 const currencies = [
   { symbol: 'USDT', name: 'Tether' },
@@ -17,8 +19,10 @@ const LoanApplication = () => {
   const [guarantorId, setGuarantorId] = useState('');
   const [hasGuarantor, setHasGuarantor] = useState(false);
   const { applyLoan, loans } = useLoan();
+  const { kycData, isVerified } = useKYC();
 
   const activeLoans = loans.filter(l => l.status === 'active');
+  const kycNotCompleted = kycData.status !== 'approved';
 
   const handleApply = () => {
     const loanAmount = parseFloat(amount);
@@ -65,6 +69,27 @@ const LoanApplication = () => {
         <Coins className="w-5 h-5 text-primary" />
         <h3 className="font-semibold text-lg">Apply for Loan</h3>
       </div>
+
+      {/* KYC Warning */}
+      {kycNotCompleted && (
+        <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="font-medium text-red-600 dark:text-red-400">Identity Verification Required</p>
+              <p className="text-sm text-red-600/80 dark:text-red-400/80 mt-1">
+                Please complete identity verification before applying for a loan.
+              </p>
+              <Link 
+                to="/account" 
+                className="inline-block mt-2 text-sm font-medium text-primary hover:underline"
+              >
+                Go to Verification →
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-6">
         {/* Currency Selection */}
@@ -185,7 +210,7 @@ const LoanApplication = () => {
           className="w-full btn-primary" 
           size="lg"
           onClick={handleApply}
-          disabled={activeLoans.length >= 3}
+          disabled={activeLoans.length >= 3 || kycNotCompleted}
         >
           {hasGuarantor ? 'Apply for Secured Loan' : 'Apply for Loan'}
         </Button>
