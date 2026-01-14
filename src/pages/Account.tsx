@@ -47,7 +47,7 @@ import {
 } from '@/components/ui/tabs';
 import { useLoan } from '@/contexts/LoanContext';
 import { useKYC } from '@/contexts/KYCContext';
-import { api, RechargeRequest, WithdrawRequest, ApplicationResponse } from '@/lib/api';
+import { supabase } from '@/integrations/supabase/client';
 
 type AccountView = 'overview' | 'withdraw' | 'recharge' | 'exchange' | 'verification';
 
@@ -163,21 +163,34 @@ const Account = () => {
       return;
     }
 
+    if (!user?.id) {
+      toast.error('Please login first');
+      return;
+    }
+
     try {
-      const request: WithdrawRequest = {
-        amount,
-        address: withdrawAddress,
-        network: selectedNetwork,
-      };
-      await api.post<ApplicationResponse>('/applications/withdraw', request);
-      
       const fee = amount * WITHDRAW_FEE_RATE;
-      const receiveAmount = amount - fee;
       
+      const { error } = await supabase.from('transactions').insert({
+        user_id: user.id,
+        type: 'withdraw',
+        amount,
+        currency: 'USDT',
+        status: 'pending',
+        to_address: withdrawAddress,
+        network: selectedNetwork,
+        fee,
+        note: `Withdraw ${amount} USDT to ${withdrawAddress} via ${selectedNetwork}`,
+      });
+
+      if (error) throw error;
+      
+      const receiveAmount = amount - fee;
       toast.success(`Withdrawal request submitted. Amount: ${amount} USDT, Fee: ${fee.toFixed(2)} USDT, You will receive: ${receiveAmount.toFixed(2)} USDT`);
       setWithdrawAmount('');
       setWithdrawAddress('');
     } catch (error: any) {
+      console.error('Withdrawal error:', error);
       toast.error(error.message || 'Withdrawal request failed');
     }
   };
@@ -209,19 +222,30 @@ const Account = () => {
       return;
     }
 
+    if (!user?.id) {
+      toast.error('Please login first');
+      return;
+    }
+
     try {
-      const request: RechargeRequest = {
+      const { error } = await supabase.from('transactions').insert({
+        user_id: user.id,
+        type: 'deposit',
         amount,
+        currency: 'USDT',
+        status: 'pending',
         network: selectedRechargeNetwork,
-        receiptImage,
-      };
-      await api.post<ApplicationResponse>('/applications/recharge', request);
+        note: `Recharge ${amount} USDT via ${selectedRechargeNetwork}. Receipt uploaded.`,
+      });
+
+      if (error) throw error;
       
       toast.success('Recharge request submitted. Please wait for confirmation.');
       setRechargeAmount('');
       setReceiptImage(null);
       setReceiptFileName('');
     } catch (error: any) {
+      console.error('Recharge error:', error);
       toast.error(error.message || 'Recharge request failed');
     }
   };
