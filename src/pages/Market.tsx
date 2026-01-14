@@ -295,18 +295,18 @@ const Market = () => {
                       }`}>
                         {item.priceDirection === 'up' && <TrendingUp className="w-3 h-3" />}
                         {item.priceDirection === 'down' && <TrendingDown className="w-3 h-3" />}
-                        ${item.price.toLocaleString(undefined, { 
-                          minimumFractionDigits: item.price < 1 ? 6 : 2,
-                          maximumFractionDigits: item.price < 1 ? 6 : 2
+                        ${(item.price ?? 0).toLocaleString(undefined, { 
+                          minimumFractionDigits: (item.price ?? 0) < 1 ? 6 : 2,
+                          maximumFractionDigits: (item.price ?? 0) < 1 ? 6 : 2
                         })}
                       </div>
                       
-                      <div className={`col-span-2 text-right font-medium ${item.change24h >= 0 ? 'text-[hsl(145,60%,45%)]' : 'text-[hsl(0,70%,55%)]'}`}>
+                      <div className={`col-span-2 text-right font-medium ${(item.change24h ?? 0) >= 0 ? 'text-[hsl(145,60%,45%)]' : 'text-[hsl(0,70%,55%)]'}`}>
                         <span className={`inline-flex items-center gap-1 px-2 py-1 rounded ${
-                          item.change24h >= 0 ? 'bg-[hsl(145,60%,45%)]/10' : 'bg-[hsl(0,70%,55%)]/10'
+                          (item.change24h ?? 0) >= 0 ? 'bg-[hsl(145,60%,45%)]/10' : 'bg-[hsl(0,70%,55%)]/10'
                         }`}>
-                          {item.change24h >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
-                          {item.change24h >= 0 ? '+' : ''}{item.change24h.toFixed(2)}%
+                          {(item.change24h ?? 0) >= 0 ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                          {(item.change24h ?? 0) >= 0 ? '+' : ''}{(item.change24h ?? 0).toFixed(2)}%
                         </span>
                       </div>
                       
@@ -347,11 +347,11 @@ const Market = () => {
                         item.priceDirection === 'up' ? 'text-[hsl(145,60%,45%)]' : 
                         item.priceDirection === 'down' ? 'text-[hsl(0,70%,55%)]' : ''
                       }`}>
-                        ${item.price < 1 ? item.price.toFixed(6) : item.price.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                        ${(item.price ?? 0) < 1 ? (item.price ?? 0).toFixed(6) : (item.price ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                       </div>
                       
-                      <div className={`text-right text-sm font-medium ${item.change24h >= 0 ? 'text-[hsl(145,60%,45%)]' : 'text-[hsl(0,70%,55%)]'}`}>
-                        {item.change24h >= 0 ? '+' : ''}{item.change24h.toFixed(2)}%
+                      <div className={`text-right text-sm font-medium ${(item.change24h ?? 0) >= 0 ? 'text-[hsl(145,60%,45%)]' : 'text-[hsl(0,70%,55%)]'}`}>
+                        {(item.change24h ?? 0) >= 0 ? '+' : ''}{(item.change24h ?? 0).toFixed(2)}%
                       </div>
                     </Link>
                   </div>
