@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { TrendingUp, TrendingDown, Clock, DollarSign, Percent } from 'lucide-react';
-import { api, SmartTradeRequest, SmartTradeResponse } from '@/lib/api';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface TradingPanelProps {
   symbol: string;
@@ -35,6 +36,7 @@ const FEE_RATE = 0.01; // 1% fee
 const TradingPanel = ({ symbol, currentPrice }: TradingPanelProps) => {
   const { getBalance, updateBalance, refreshAssets } = useAssets();
   const { addTrade } = useTradeHistory();
+  const { user } = useAuth();
   const [direction, setDirection] = useState<'long' | 'short'>('long');
   const [usdtAmount, setUsdtAmount] = useState('');
   const [selectedTime, setSelectedTime] = useState(TIME_OPTIONS[0]);
@@ -123,6 +125,11 @@ const TradingPanel = ({ symbol, currentPrice }: TradingPanelProps) => {
   }, [activeTrade, updateBalance, addTrade, symbol, refreshAssets]);
 
   const handleTrade = async () => {
+    if (!user) {
+      toast.error('Please login first');
+      return;
+    }
+
     const usdtNum = parseFloat(usdtAmount);
 
     if (isNaN(usdtNum) || usdtNum <= 0) {
@@ -141,28 +148,40 @@ const TradingPanel = ({ symbol, currentPrice }: TradingPanelProps) => {
     setIsSubmitting(true);
 
     try {
-      // Call backend API to create smart trade
-      const request: SmartTradeRequest = {
-        pair: symbol,
-        side: direction,
+      // Deduct amount from user's balance via Supabase
+      const { error: updateError } = await supabase
+        .from('assets')
+        .update({ balance: usdtBalance - totalCost })
+        .eq('user_id', user.id)
+        .eq('currency', 'USDT');
+
+      if (updateError) {
+        throw new Error('Failed to update balance');
+      }
+
+      // Record the trade transaction
+      await supabase.from('transactions').insert({
+        user_id: user.id,
+        type: 'trade',
         amount: usdtNum,
-        duration: selectedTime.duration,
-      };
+        currency: 'USDT',
+        fee: fee,
+        status: 'pending',
+        note: `Smart Trade: ${direction.toUpperCase()} ${symbol} @ $${currentPrice.toLocaleString()} for ${selectedTime.label}`,
+      });
 
-      const response = await api.post<SmartTradeResponse>('/trades/smart', request);
-
-      // Deduct amount immediately (local update)
+      // Update local state
       updateBalance('USDT', -totalCost);
 
       const trade: ActiveTrade = {
-        id: response.id || Date.now().toString(),
+        id: Date.now().toString(),
         direction,
         amount: usdtNum,
-        entryPrice: response.entryPrice || currentPrice,
-        duration: response.duration || selectedTime.duration,
-        profitRate: response.profitRate || selectedTime.profitRate,
-        startTime: response.startTime || Date.now(),
-        fee: response.fee || fee,
+        entryPrice: currentPrice,
+        duration: selectedTime.duration,
+        profitRate: selectedTime.profitRate,
+        startTime: Date.now(),
+        fee: fee,
       };
 
       setActiveTrade(trade);
