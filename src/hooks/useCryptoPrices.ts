@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { api, PriceData } from '@/lib/api';
 
 interface CryptoPrice {
   id: string;
@@ -76,12 +75,16 @@ export const useCryptoPrices = () => {
 
   const fetchPrices = useCallback(async () => {
     try {
-      // Call backend API: GET /api/prices?ids=bitcoin,ethereum,solana...
-      const data = await api.get<Record<string, PriceData>>(
-        `/prices?ids=${COIN_IDS}`,
-        false // No auth required for price data
+      // Call CoinGecko API directly
+      const response = await fetch(
+        `https://api.coingecko.com/api/v3/simple/price?ids=${COIN_IDS}&vs_currencies=usd&include_24hr_change=true`
       );
       
+      if (!response.ok) {
+        throw new Error('Failed to fetch prices');
+      }
+      
+      const data = await response.json();
       lastSuccessfulFetchRef.current = Date.now();
 
       const newPrices: Record<string, CryptoPrice> = {};
