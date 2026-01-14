@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { Save, Wallet } from 'lucide-react';
-import { adminApi, AdminConfig } from '@/lib/adminApi';
+import { supabase } from '@/integrations/supabase/client';
 
 const NETWORKS = [
   { id: 'ERC20-USDT', name: 'ERC20 (USDT)', icon: '⟠' },
@@ -13,7 +13,6 @@ const NETWORKS = [
 ];
 
 const AdminSettings = () => {
-  const [config, setConfig] = useState<AdminConfig | null>(null);
   const [addresses, setAddresses] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState<string | null>(null);
@@ -21,13 +20,23 @@ const AdminSettings = () => {
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        const data = await adminApi.getConfig();
-        setConfig(data);
-        
-        // Convert array to object for easier editing
+        const { data, error } = await supabase
+          .from('system_config')
+          .select('*')
+          .like('key', 'recharge_address_%');
+
+        if (error) {
+          console.error('Failed to fetch config:', error);
+          toast.error('加载配置失败');
+          return;
+        }
+
+        // Convert to address map
         const addressMap: Record<string, string> = {};
-        data.rechargeAddresses.forEach(item => {
-          addressMap[item.network] = item.address;
+        data?.forEach(item => {
+          // Extract network from key like "recharge_address_ERC20-USDT"
+          const network = item.key.replace('recharge_address_', '');
+          addressMap[network] = item.value;
         });
         setAddresses(addressMap);
       } catch (error: any) {
@@ -49,7 +58,26 @@ const AdminSettings = () => {
 
     setIsSaving(network);
     try {
-      await adminApi.updateRechargeAddress(network, address);
+      const key = `recharge_address_${network}`;
+      
+      // Use upsert to insert or update
+      const { error } = await supabase
+        .from('system_config')
+        .upsert(
+          { 
+            key, 
+            value: address,
+            description: `${network} 充值钱包地址`
+          },
+          { onConflict: 'key' }
+        );
+
+      if (error) {
+        console.error('Failed to save address:', error);
+        toast.error('更新地址失败');
+        return;
+      }
+
       toast.success(`${network} 地址更新成功`);
     } catch (error: any) {
       toast.error(error.message || '更新地址失败');

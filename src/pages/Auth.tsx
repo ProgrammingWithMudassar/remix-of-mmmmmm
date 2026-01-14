@@ -4,10 +4,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import MetaMaskLogo from '@/components/MetaMaskLogo';
 import { toast } from 'sonner';
-import { Sparkles, TrendingUp, Lock, Shield } from 'lucide-react';
+import { Sparkles, TrendingUp, Lock, Shield, Wallet } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 type AuthMode = 'login' | 'register';
+
+declare global {
+  interface Window {
+    ethereum?: {
+      request: (args: { method: string; params?: unknown[] }) => Promise<unknown>;
+      isMetaMask?: boolean;
+    };
+  }
+}
 
 const Auth = () => {
   const [mode, setMode] = useState<AuthMode>('login');
@@ -16,6 +26,7 @@ const Auth = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isConnectingWallet, setIsConnectingWallet] = useState(false);
   const navigate = useNavigate();
   const { login, register, isAuthenticated, isLoading: authLoading } = useAuth();
 
@@ -25,6 +36,98 @@ const Auth = () => {
       navigate('/');
     }
   }, [isAuthenticated, authLoading, navigate]);
+
+  const handleWalletConnect = async () => {
+    if (!window.ethereum) {
+      toast.error('Please install MetaMask wallet first');
+      return;
+    }
+
+    setIsConnectingWallet(true);
+
+    try {
+      // Request account access
+      const accounts = await window.ethereum.request({ 
+        method: 'eth_requestAccounts' 
+      }) as string[];
+      
+      if (!accounts || accounts.length === 0) {
+        toast.error('No wallet account found');
+        return;
+      }
+
+      const walletAddress = accounts[0].toLowerCase();
+      
+      // Generate a pseudo email and password from wallet address
+      const walletEmail = `${walletAddress.slice(0, 10)}@wallet.metamask`;
+      const walletPassword = `Wallet_${walletAddress.slice(-16)}`;
+      const walletUsername = `Wallet_${walletAddress.slice(0, 8)}`;
+
+      // Try to login first (if user exists)
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email: walletEmail,
+        password: walletPassword,
+      });
+
+      if (!loginError) {
+        // Login successful, update wallet address in profile
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData.session?.user) {
+          await supabase
+            .from('profiles')
+            .update({ wallet_address: walletAddress })
+            .eq('user_id', sessionData.session.user.id);
+        }
+        
+        toast.success('Wallet connected successfully!');
+        navigate('/');
+        return;
+      }
+
+      // If login failed, try to register
+      const { error: signUpError } = await supabase.auth.signUp({
+        email: walletEmail,
+        password: walletPassword,
+        options: {
+          data: {
+            username: walletUsername,
+            wallet_address: walletAddress,
+          },
+        },
+      });
+
+      if (signUpError) {
+        // Handle specific errors
+        if (signUpError.message.includes('already registered')) {
+          toast.error('This wallet is already registered. Please try again.');
+        } else {
+          toast.error(signUpError.message || 'Failed to connect wallet');
+        }
+        return;
+      }
+
+      // Update wallet address in profile after registration
+      const { data: newSession } = await supabase.auth.getSession();
+      if (newSession.session?.user) {
+        await supabase
+          .from('profiles')
+          .update({ wallet_address: walletAddress })
+          .eq('user_id', newSession.session.user.id);
+      }
+
+      toast.success('Wallet connected and account created!');
+      navigate('/');
+    } catch (error: any) {
+      console.error('Wallet connection error:', error);
+      if (error.code === 4001) {
+        toast.error('Connection request rejected');
+      } else {
+        toast.error(error.message || 'Failed to connect wallet');
+      }
+    } finally {
+      setIsConnectingWallet(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -181,6 +284,31 @@ const Auth = () => {
                     ? 'Enter your credentials to access your account' 
                     : 'Fill in your details to get started'}
                 </p>
+              </div>
+
+              {/* Wallet Connect Button */}
+              <Button
+                onClick={handleWalletConnect}
+                disabled={isConnectingWallet || isLoading}
+                className="w-full h-14 text-base font-semibold bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white rounded-xl mb-6 flex items-center justify-center gap-3"
+              >
+                {isConnectingWallet ? (
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Wallet className="w-5 h-5" />
+                    <span>Connect Wallet</span>
+                  </>
+                )}
+              </Button>
+
+              <div className="relative mb-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border"></div>
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-card px-2 text-muted-foreground">Or continue with email</span>
+                </div>
               </div>
 
               {mode === 'login' ? (
