@@ -1,14 +1,16 @@
 import { useAssets } from '@/contexts/AssetsContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Wallet } from 'lucide-react';
 
 const UserAssets = () => {
+  const { t } = useLanguage();
   const { assets } = useAssets();
 
   return (
     <div className="bg-card border border-border rounded-xl p-4">
       <div className="flex items-center gap-2 mb-4">
         <Wallet className="w-5 h-5 text-primary" />
-        <h3 className="font-semibold">My Assets</h3>
+        <h3 className="font-semibold">{t('account.myAssets')}</h3>
       </div>
       <div className="space-y-3">
         {assets.map((asset) => (
@@ -21,9 +23,9 @@ const UserAssets = () => {
               </div>
             </div>
             <p className="font-medium">
-              {asset.balance.toLocaleString(undefined, { 
+              {asset.balance.toLocaleString(undefined, {
                 minimumFractionDigits: asset.symbol === 'USDT' ? 2 : 4,
-                maximumFractionDigits: asset.symbol === 'USDT' ? 2 : 8 
+                maximumFractionDigits: asset.symbol === 'USDT' ? 2 : 8,
               })}
             </p>
           </div>

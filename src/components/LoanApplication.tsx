@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useLoan, MIN_LOAN_AMOUNT, MAX_LOAN_AMOUNT } from '@/contexts/LoanContext';
 import { useKYC } from '@/contexts/KYCContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,6 +17,7 @@ const currencies = [
 ];
 
 const LoanApplication = () => {
+  const { t } = useLanguage();
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('USDT');
   const [guarantorName, setGuarantorName] = useState('');
@@ -30,16 +32,16 @@ const LoanApplication = () => {
   useEffect(() => {
     const checkFrozenStatus = async () => {
       if (!user?.id) return;
-      
+
       const { data } = await supabase
         .from('profiles')
         .select('is_frozen')
         .eq('user_id', user.id)
         .single();
-      
+
       setIsFrozen(data?.is_frozen || false);
     };
-    
+
     checkFrozenStatus();
   }, [user?.id]);
 
@@ -51,22 +53,30 @@ const LoanApplication = () => {
     const loanAmount = parseFloat(amount);
 
     if (!loanAmount || loanAmount <= 0) {
-      toast.error('Please enter a valid amount');
+      toast.error(t('loan.enterValidAmount'));
       return;
     }
 
     if (loanAmount < MIN_LOAN_AMOUNT) {
-      toast.error(`Minimum loan amount is ${MIN_LOAN_AMOUNT.toLocaleString()} ${currency}`);
+      toast.error(
+        t('loan.minimumLoanAmountIs')
+          .replace('{amount}', MIN_LOAN_AMOUNT.toLocaleString())
+          .replace('{currency}', currency),
+      );
       return;
     }
 
     if (loanAmount > MAX_LOAN_AMOUNT) {
-      toast.error(`Maximum loan amount is ${MAX_LOAN_AMOUNT.toLocaleString()} ${currency}`);
+      toast.error(
+        t('loan.maximumLoanAmountIs')
+          .replace('{amount}', MAX_LOAN_AMOUNT.toLocaleString())
+          .replace('{currency}', currency),
+      );
       return;
     }
 
     if (activeLoans.length >= 3) {
-      toast.error('Maximum 3 active loans allowed');
+      toast.error(t('loan.maxActiveLoans'));
       return;
     }
 
@@ -74,14 +84,24 @@ const LoanApplication = () => {
 
     setIsSubmitting(true);
     try {
-      const success = await applyLoan(loanAmount, currency, hasGuarantor ? { name: guarantorName.trim(), contact: guarantorContact.trim() } : null);
+      const success = await applyLoan(
+        loanAmount,
+        currency,
+        hasGuarantor
+          ? { name: guarantorName.trim(), contact: guarantorContact.trim() }
+          : null,
+      );
       if (success) {
-        toast.success(`Loan application submitted for ${loanAmount.toLocaleString()} ${currency}. Waiting for approval.`);
+        toast.success(
+          t('loan.applicationSubmitted')
+            .replace('{amount}', loanAmount.toLocaleString())
+            .replace('{currency}', currency),
+        );
         setAmount('');
         setGuarantorName('');
         setGuarantorContact('');
       } else {
-        toast.error('Failed to process loan application');
+        toast.error(t('loan.applicationFailed'));
       }
     } finally {
       setIsSubmitting(false);
@@ -92,7 +112,7 @@ const LoanApplication = () => {
     <div className="bg-card border border-border rounded-xl p-6">
       <div className="flex items-center gap-2 mb-6">
         <Coins className="w-5 h-5 text-primary" />
-        <h3 className="font-semibold text-lg">Apply for Loan</h3>
+        <h3 className="font-semibold text-lg">{t('loan.applyTitle')}</h3>
       </div>
 
       {/* Account Frozen Warning */}
@@ -101,9 +121,9 @@ const LoanApplication = () => {
           <div className="flex items-start gap-3">
             <Ban className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-red-600 dark:text-red-400">Account Frozen</p>
+              <p className="font-medium text-red-600 dark:text-red-400">{t('loan.accountFrozen')}</p>
               <p className="text-sm text-red-600/80 dark:text-red-400/80 mt-1">
-                Your account has been frozen. Loan applications are disabled. Please contact customer support.
+                {t('loan.accountFrozenDesc')}
               </p>
             </div>
           </div>
@@ -116,15 +136,15 @@ const LoanApplication = () => {
           <div className="flex items-start gap-3">
             <AlertTriangle className="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" />
             <div>
-              <p className="font-medium text-red-600 dark:text-red-400">Identity Verification Required</p>
+              <p className="font-medium text-red-600 dark:text-red-400">{t('loan.kycRequired')}</p>
               <p className="text-sm text-red-600/80 dark:text-red-400/80 mt-1">
-                Please complete identity verification before applying for a loan.
+                {t('loan.kycRequiredDesc')}
               </p>
-              <Link 
-                to="/account" 
+              <Link
+                to="/account"
                 className="inline-block mt-2 text-sm font-medium text-primary hover:underline"
               >
-                Go to Verification →
+                {t('loan.goToVerification')}
               </Link>
             </div>
           </div>
@@ -134,7 +154,7 @@ const LoanApplication = () => {
       <div className={`space-y-6 ${isFrozen ? 'opacity-50 pointer-events-none' : ''}`}>
         {/* Currency Selection */}
         <div className="space-y-2">
-          <Label>Select Currency</Label>
+          <Label>{t('loan.selectCurrency')}</Label>
           <Select value={currency} onValueChange={setCurrency}>
             <SelectTrigger>
               <SelectValue />
@@ -154,7 +174,7 @@ const LoanApplication = () => {
 
         {/* Amount Input */}
         <div className="space-y-2">
-          <Label>Loan Amount</Label>
+          <Label>{t('loan.loanAmount')}</Label>
           <div className="relative">
             <Input
               type="number"
@@ -170,28 +190,26 @@ const LoanApplication = () => {
             </span>
           </div>
           <p className="text-xs text-muted-foreground">
-            Min: {MIN_LOAN_AMOUNT.toLocaleString()} | Max: {MAX_LOAN_AMOUNT.toLocaleString()} {currency}
+            {t('loan.minLabel')}: {MIN_LOAN_AMOUNT.toLocaleString()} | {t('loan.maxLabel')}: {MAX_LOAN_AMOUNT.toLocaleString()} {currency}
           </p>
         </div>
 
         {/* Guarantor (optional) */}
         <div className="space-y-2">
           <div className="flex items-end justify-between gap-4">
-            <Label>Guarantor (Optional)</Label>
-            <p className="text-xs text-muted-foreground text-right">
-              Adding a guarantor can increase the loan amount and the success rate.
-            </p>
+            <Label>{t('loan.guarantorOptional')}</Label>
+            <p className="text-xs text-muted-foreground text-right">{t('loan.guarantorHint')}</p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <Input
               type="text"
-              placeholder="Guarantor name"
+              placeholder={t('loan.guarantorName')}
               value={guarantorName}
               onChange={(e) => setGuarantorName(e.target.value)}
             />
             <Input
               type="text"
-              placeholder="Guarantor contact (phone/email)"
+              placeholder={t('loan.guarantorContact')}
               value={guarantorContact}
               onChange={(e) => setGuarantorContact(e.target.value)}
             />
@@ -211,15 +229,15 @@ const LoanApplication = () => {
         <div className="bg-muted/50 rounded-lg p-4 space-y-3">
           <div className="flex items-center gap-2 text-sm">
             <Clock className="w-4 h-4 text-primary" />
-            <span>Interest-free period: 7 days</span>
+            <span>{t('loan.interestFreeInfo')}</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Info className="w-4 h-4 text-yellow-500" />
-            <span>After 7 days: 1% daily interest</span>
+            <span>{t('loan.after7DaysInterestInfo')}</span>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Info className="w-4 h-4 text-red-500" />
-            <span>After 15 days: 2% daily penalty</span>
+            <span>{t('loan.after15DaysPenaltyInfo')}</span>
           </div>
         </div>
 
@@ -227,19 +245,19 @@ const LoanApplication = () => {
         {activeLoans.length > 0 && (
           <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
             <p className="text-sm text-yellow-600 dark:text-yellow-400">
-              You have {activeLoans.length} active loan(s). Max 3 allowed.
+              {t('loan.activeLoansNotice').replace('{count}', String(activeLoans.length))}
             </p>
           </div>
         )}
 
         {/* Submit Button */}
-        <Button 
-          className="w-full btn-primary" 
+        <Button
+          className="w-full btn-primary"
           size="lg"
           onClick={handleApply}
           disabled={activeLoans.length >= 3 || kycNotCompleted || isSubmitting || isFrozen}
         >
-          {isSubmitting ? 'Submitting...' : 'Apply for Loan'}
+          {isSubmitting ? t('loan.submitting') : t('loan.applyTitle')}
         </Button>
       </div>
     </div>
