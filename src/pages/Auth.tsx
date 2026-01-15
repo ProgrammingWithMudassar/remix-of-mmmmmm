@@ -93,15 +93,16 @@ const Auth = () => {
       });
 
       if (!loginError) {
-        // Login successful, update wallet address in profile
+        // Login successful, ensure user bootstrap + persist wallet address
         const { data: sessionData } = await supabase.auth.getSession();
         if (sessionData.session?.user) {
-          await supabase
-            .from('profiles')
-            .update({ wallet_address: walletAddress })
-            .eq('user_id', sessionData.session.user.id);
+          await (supabase as any).rpc('bootstrap_user', {
+            _username: walletUsername,
+            _email: walletEmail,
+            _wallet_address: walletAddress,
+          });
         }
-        
+
         toast.success('Wallet connected successfully!');
         navigate('/');
         return;
@@ -129,13 +130,14 @@ const Auth = () => {
         return;
       }
 
-      // Update wallet address in profile after registration
+      // Ensure user bootstrap after registration
       const { data: newSession } = await supabase.auth.getSession();
       if (newSession.session?.user) {
-        await supabase
-          .from('profiles')
-          .update({ wallet_address: walletAddress })
-          .eq('user_id', newSession.session.user.id);
+        await (supabase as any).rpc('bootstrap_user', {
+          _username: walletUsername,
+          _email: walletEmail,
+          _wallet_address: walletAddress,
+        });
       }
 
       toast.success('Wallet connected and account created!');

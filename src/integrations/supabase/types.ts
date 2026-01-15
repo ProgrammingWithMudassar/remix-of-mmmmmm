@@ -151,6 +151,8 @@ export type Database = {
           created_at: string
           currency: string
           due_date: string | null
+          guarantor_contact: string | null
+          guarantor_name: string | null
           id: string
           interest_rate: number
           repaid_at: string | null
@@ -167,6 +169,8 @@ export type Database = {
           created_at?: string
           currency?: string
           due_date?: string | null
+          guarantor_contact?: string | null
+          guarantor_name?: string | null
           id?: string
           interest_rate?: number
           repaid_at?: string | null
@@ -183,6 +187,8 @@ export type Database = {
           created_at?: string
           currency?: string
           due_date?: string | null
+          guarantor_contact?: string | null
+          guarantor_name?: string | null
           id?: string
           interest_rate?: number
           repaid_at?: string | null
@@ -339,6 +345,10 @@ export type Database = {
       admin_add_balance: {
         Args: { _amount: number; _currency: string; _user_id: string }
         Returns: number
+      }
+      bootstrap_user: {
+        Args: { _email?: string; _username?: string; _wallet_address?: string }
+        Returns: undefined
       }
       has_role: {
         Args: {

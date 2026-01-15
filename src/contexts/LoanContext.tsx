@@ -17,12 +17,16 @@ export interface Loan {
 
 interface LoanContextType {
   loans: Loan[];
-  applyLoan: (amount: number, currency?: string) => Promise<boolean>;
-  calculateOwed: (loan: Loan) => { 
-    principal: number; 
-    interest: number; 
-    penalty: number; 
-    total: number; 
+  applyLoan: (
+    amount: number,
+    currency?: string,
+    guarantor?: { name: string; contact: string } | null
+  ) => Promise<boolean>;
+  calculateOwed: (loan: Loan) => {
+    principal: number;
+    interest: number;
+    penalty: number;
+    total: number;
     daysElapsed: number;
   };
   activeLoans: Loan[];
@@ -159,7 +163,11 @@ export const LoanProvider = ({ children }: { children: ReactNode }) => {
     };
   };
 
-  const applyLoan = async (amount: number, currency: string = 'USDT'): Promise<boolean> => {
+  const applyLoan = async (
+    amount: number,
+    currency: string = 'USDT',
+    guarantor: { name: string; contact: string } | null = null
+  ): Promise<boolean> => {
     if (!user) return false;
     if (amount < MIN_LOAN_AMOUNT || amount > MAX_LOAN_AMOUNT) return false;
 
@@ -170,9 +178,11 @@ export const LoanProvider = ({ children }: { children: ReactNode }) => {
           user_id: user.id,
           amount,
           currency,
-          interest_rate: 5.00,
+          interest_rate: 5.0,
           term_days: 30,
           status: 'pending',
+          guarantor_name: guarantor?.name || null,
+          guarantor_contact: guarantor?.contact || null,
         });
 
       if (error) {
