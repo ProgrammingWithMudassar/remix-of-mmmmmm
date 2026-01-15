@@ -53,6 +53,7 @@ interface Application {
   // Repayment specific
   loan_id?: string;
   repayment_type?: string;
+  receipt_image_url?: string;
 }
 
 const AdminApplications = () => {
@@ -162,8 +163,8 @@ const AdminApplications = () => {
 
           repayments.forEach(repayment => {
             const profile = profiles?.find(p => p.user_id === repayment.user_id);
-            const typeLabel = repayment.repayment_type === 'early_full' ? '提前全额' : 
-                             repayment.repayment_type === 'full' ? '到期全额' : '部分';
+            const typeLabel = repayment.repayment_type === 'early_full' ? 'Early Full' : 
+                             repayment.repayment_type === 'full' ? 'Full' : 'Partial';
             allApplications.push({
               id: repayment.id,
               user_id: repayment.user_id,
@@ -173,10 +174,11 @@ const AdminApplications = () => {
               currency: 'USDT',
               status: repayment.status,
               created_at: repayment.created_at,
-              details: `${typeLabel}还款`,
+              details: `${typeLabel} Repayment`,
               table_name: 'loan_repayments',
               loan_id: repayment.loan_id,
               repayment_type: repayment.repayment_type,
+              receipt_image_url: repayment.receipt_image_url || undefined,
             });
           });
         }
@@ -296,8 +298,26 @@ const AdminApplications = () => {
           })
           .eq('id', app.id);
 
-        // If full repayment, mark loan as repaid
-        if (app.repayment_type === 'full' || app.repayment_type === 'early_full') {
+        // Get current loan data
+        const { data: loanData } = await supabase
+          .from('loans')
+          .select('amount')
+          .eq('id', app.loan_id)
+          .single();
+
+        // Calculate remaining balance after this repayment
+        // Get all approved repayments for this loan
+        const { data: approvedRepayments } = await supabase
+          .from('loan_repayments')
+          .select('amount')
+          .eq('loan_id', app.loan_id)
+          .eq('status', 'approved');
+
+        const totalRepaid = approvedRepayments?.reduce((sum, r) => sum + Number(r.amount), 0) || 0;
+        const loanAmount = loanData?.amount || 0;
+
+        // If full repayment or total repaid >= loan amount, mark loan as repaid
+        if (app.repayment_type === 'full' || app.repayment_type === 'early_full' || totalRepaid >= loanAmount) {
           await supabase
             .from('loans')
             .update({ 
@@ -307,7 +327,7 @@ const AdminApplications = () => {
             .eq('id', app.loan_id);
         }
 
-        toast.success('还款申请已通过');
+        toast.success('Repayment approved');
         fetchApplications();
         return;
       } else if (app.table_name === 'kyc_records') {
@@ -468,7 +488,17 @@ const AdminApplications = () => {
                             onClick={() => setKycDetailModal({ open: true, app })}
                           >
                             <Eye className="w-3 h-3 mr-1" />
-                            查看
+                            View
+                          </Button>
+                        )}
+                        {app.type === 'repayment' && app.receipt_image_url && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openImagePreview(app.receipt_image_url!, 'Payment Receipt')}
+                          >
+                            <Image className="w-3 h-3 mr-1" />
+                            Receipt
                           </Button>
                         )}
                       </div>

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLoan } from '@/contexts/LoanContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
-import { CreditCard, Clock, AlertTriangle, CheckCircle, Send, Loader2, History } from 'lucide-react';
+import { CreditCard, Clock, AlertTriangle, CheckCircle, Send, Loader2, History, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,6 +31,7 @@ interface RepaymentRecord {
   status: string;
   created_at: string;
   reject_reason?: string;
+  receipt_image_url?: string;
 }
 
 const LoanRepayment = () => {
@@ -46,6 +47,8 @@ const LoanRepayment = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [repaymentHistory, setRepaymentHistory] = useState<RepaymentRecord[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [receiptImage, setReceiptImage] = useState<string | null>(null);
+  const [receiptFileName, setReceiptFileName] = useState('');
 
   // Active loans are those with 'approved' or 'overdue' status
   const activeLoans = loans.filter(l => l.status === 'approved' || l.status === 'overdue');
@@ -88,6 +91,8 @@ const LoanRepayment = () => {
     setRepaymentModal({ open: true, loanId, totalOwed });
     setRepaymentType('partial');
     setRepaymentAmount('');
+    setReceiptImage(null);
+    setReceiptFileName('');
   };
 
   const handleRepaymentTypeChange = (type: 'partial' | 'early_full' | 'full') => {
@@ -96,6 +101,22 @@ const LoanRepayment = () => {
       setRepaymentAmount(repaymentModal.totalOwed.toFixed(2));
     } else {
       setRepaymentAmount('');
+    }
+  };
+
+  const handleReceiptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Image size must be less than 5MB');
+        return;
+      }
+      setReceiptFileName(file.name);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setReceiptImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
@@ -123,6 +144,7 @@ const LoanRepayment = () => {
           amount,
           repayment_type: repaymentType,
           status: 'pending',
+          receipt_image_url: receiptImage || null,
         });
 
       if (error) {
@@ -131,6 +153,8 @@ const LoanRepayment = () => {
 
       toast.success('Repayment request submitted. Awaiting admin approval.');
       setRepaymentModal({ open: false, loanId: null, totalOwed: 0 });
+      setReceiptImage(null);
+      setReceiptFileName('');
       fetchRepaymentHistory();
     } catch (error: any) {
       console.error('Repayment submission failed:', error);
@@ -353,6 +377,34 @@ const LoanRepayment = () => {
                 onChange={(e) => setRepaymentAmount(e.target.value)}
                 disabled={repaymentType === 'full' || repaymentType === 'early_full'}
               />
+            </div>
+
+            {/* Receipt Upload */}
+            <div className="space-y-2">
+              <Label>Payment Receipt (Optional)</Label>
+              <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-primary/50 transition-colors">
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  id="receipt-upload"
+                  onChange={handleReceiptUpload}
+                />
+                <label htmlFor="receipt-upload" className="cursor-pointer">
+                  {receiptImage ? (
+                    <div className="space-y-2">
+                      <img src={receiptImage} alt="Receipt" className="max-h-32 mx-auto rounded-lg" />
+                      <p className="text-xs text-muted-foreground">{receiptFileName}</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Upload className="w-8 h-8 mx-auto text-muted-foreground" />
+                      <p className="text-sm text-muted-foreground">Upload payment receipt</p>
+                      <p className="text-xs text-muted-foreground">Max 5MB, JPG/PNG</p>
+                    </div>
+                  )}
+                </label>
+              </div>
             </div>
 
             <div className="text-sm text-muted-foreground">
