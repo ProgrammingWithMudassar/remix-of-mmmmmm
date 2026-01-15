@@ -130,7 +130,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const register = async (email: string, password: string, username: string): Promise<{ error: string | null }> => {
     try {
       const redirectUrl = `${window.location.origin}/`;
-      
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
@@ -143,11 +143,21 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       });
 
       if (error) {
-        // Handle specific error cases
         if (error.message.includes('already registered')) {
           return { error: 'This email is already registered. Please login instead.' };
         }
         return { error: error.message };
+      }
+
+      // Ensure public tables are created for this user (profile, role, default assets)
+      // Best-effort: only runs if a session exists (e.g. auto-confirm or immediate sign-in).
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (sessionData.session?.user) {
+        await (supabase as any).rpc('bootstrap_user', {
+          _username: username,
+          _email: email,
+          _wallet_address: null,
+        });
       }
 
       return { error: null };

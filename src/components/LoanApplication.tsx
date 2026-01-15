@@ -16,17 +16,19 @@ const currencies = [
 const LoanApplication = () => {
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('USDT');
+  const [guarantorName, setGuarantorName] = useState('');
+  const [guarantorContact, setGuarantorContact] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { applyLoan, loans } = useLoan();
   const { kycData } = useKYC();
 
   // Count active loans (approved or overdue status)
-  const activeLoans = loans.filter(l => l.status === 'approved' || l.status === 'overdue');
+  const activeLoans = loans.filter((l) => l.status === 'approved' || l.status === 'overdue');
   const kycNotCompleted = kycData.status !== 'approved';
 
   const handleApply = async () => {
     const loanAmount = parseFloat(amount);
-    
+
     if (!loanAmount || loanAmount <= 0) {
       toast.error('Please enter a valid amount');
       return;
@@ -47,12 +49,16 @@ const LoanApplication = () => {
       return;
     }
 
+    const hasGuarantor = guarantorName.trim() && guarantorContact.trim();
+
     setIsSubmitting(true);
     try {
-      const success = await applyLoan(loanAmount, currency);
+      const success = await applyLoan(loanAmount, currency, hasGuarantor ? { name: guarantorName.trim(), contact: guarantorContact.trim() } : null);
       if (success) {
         toast.success(`Loan application submitted for ${loanAmount.toLocaleString()} ${currency}. Waiting for approval.`);
         setAmount('');
+        setGuarantorName('');
+        setGuarantorContact('');
       } else {
         toast.error('Failed to process loan application');
       }
@@ -132,15 +138,34 @@ const LoanApplication = () => {
           </p>
         </div>
 
+        {/* Guarantor (optional) */}
+        <div className="space-y-2">
+          <div className="flex items-end justify-between gap-4">
+            <Label>Guarantor (Optional)</Label>
+            <p className="text-xs text-muted-foreground text-right">
+              Adding a guarantor can increase the loan amount and the success rate.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Input
+              type="text"
+              placeholder="Guarantor name"
+              value={guarantorName}
+              onChange={(e) => setGuarantorName(e.target.value)}
+            />
+            <Input
+              type="text"
+              placeholder="Guarantor contact (phone/email)"
+              value={guarantorContact}
+              onChange={(e) => setGuarantorContact(e.target.value)}
+            />
+          </div>
+        </div>
+
         {/* Quick Amount Buttons */}
         <div className="grid grid-cols-4 gap-2">
           {[5000, 20000, 50000, 100000].map((val) => (
-            <Button
-              key={val}
-              variant="outline"
-              size="sm"
-              onClick={() => setAmount(val.toString())}
-            >
+            <Button key={val} variant="outline" size="sm" onClick={() => setAmount(val.toString())}>
               {val >= 1000 ? `${val / 1000}K` : val}
             </Button>
           ))}
