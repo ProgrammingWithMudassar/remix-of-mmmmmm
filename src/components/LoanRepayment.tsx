@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useLoan } from '@/contexts/LoanContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { supabase } from '@/integrations/supabase/client';
-import { CreditCard, Clock, AlertTriangle, CheckCircle, Send, Loader2, History, Upload } from 'lucide-react';
+import { CreditCard, Clock, AlertTriangle, CheckCircle, Send, History, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,10 +36,18 @@ interface RepaymentRecord {
 }
 
 const LoanRepayment = () => {
+  const { t } = useLanguage();
   const { loans, calculateOwed, refreshLoans } = useLoan();
   const { user } = useAuth();
-  const [repaymentModal, setRepaymentModal] = useState<{ open: boolean; loanId: string | null; totalOwed: number; principal: number; interest: number; penalty: number }>({ 
-    open: false, 
+  const [repaymentModal, setRepaymentModal] = useState<{
+    open: boolean;
+    loanId: string | null;
+    totalOwed: number;
+    principal: number;
+    interest: number;
+    penalty: number;
+  }>({
+    open: false,
     loanId: null,
     totalOwed: 0,
     principal: 0,
@@ -54,8 +63,8 @@ const LoanRepayment = () => {
   const [receiptFileName, setReceiptFileName] = useState('');
 
   // Active loans are those with 'approved' or 'overdue' status
-  const activeLoans = loans.filter(l => l.status === 'approved' || l.status === 'overdue');
-  const paidLoans = loans.filter(l => l.status === 'repaid');
+  const activeLoans = loans.filter((l) => l.status === 'approved' || l.status === 'overdue');
+  const paidLoans = loans.filter((l) => l.status === 'repaid');
 
   // Calculate total remaining balance across all active loans
   const totalRemainingOwed = activeLoans.reduce((sum, loan) => {
@@ -71,7 +80,7 @@ const LoanRepayment = () => {
 
   const fetchRepaymentHistory = async () => {
     if (!user) return;
-    
+
     const { data, error } = await supabase
       .from('loan_repayments')
       .select('*')
@@ -97,9 +106,9 @@ const LoanRepayment = () => {
   };
 
   const openRepaymentModal = (loanId: string, owed: { total: number; principal: number; interest: number; penalty: number }) => {
-    setRepaymentModal({ 
-      open: true, 
-      loanId, 
+    setRepaymentModal({
+      open: true,
+      loanId,
       totalOwed: owed.total,
       principal: owed.principal,
       interest: owed.interest,
@@ -124,7 +133,7 @@ const LoanRepayment = () => {
     const file = e.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size must be less than 5MB');
+        toast.error(t('loan.imageTooLarge'));
         return;
       }
       setReceiptFileName(file.name);
@@ -138,43 +147,42 @@ const LoanRepayment = () => {
 
   const handleSubmitRepayment = async () => {
     if (!user || !repaymentModal.loanId) return;
-    
+
     const amount = parseFloat(repaymentAmount);
     if (isNaN(amount) || amount <= 0) {
-      toast.error('Please enter a valid amount');
+      toast.error(t('loan.enterValidAmount'));
       return;
     }
 
     if (amount > repaymentModal.totalOwed * 1.01) {
-      toast.error('Amount cannot exceed the total owed');
+      toast.error(t('loan.amountCannotExceedTotal'));
       return;
     }
 
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from('loan_repayments')
-        .insert({
-          loan_id: repaymentModal.loanId,
-          user_id: user.id,
-          amount,
-          repayment_type: repaymentType,
-          status: 'pending',
-          receipt_image_url: receiptImage || null,
-        });
+      const { error } = await supabase.from('loan_repayments').insert({
+        loan_id: repaymentModal.loanId,
+        user_id: user.id,
+        amount,
+        repayment_type: repaymentType,
+        status: 'pending',
+        receipt_image_url: receiptImage || null,
+      });
 
       if (error) {
         throw error;
       }
 
-      toast.success('Repayment request submitted, awaiting admin review');
+      toast.success(t('loan.repaymentSubmitted'));
       setRepaymentModal({ open: false, loanId: null, totalOwed: 0, principal: 0, interest: 0, penalty: 0 });
       setReceiptImage(null);
       setReceiptFileName('');
       fetchRepaymentHistory();
+      refreshLoans?.();
     } catch (error: any) {
       console.error('Repayment submission failed:', error);
-      toast.error('Submission failed, please try again');
+      toast.error(t('loan.submissionFailedTryAgain'));
     } finally {
       setIsSubmitting(false);
     }
@@ -183,11 +191,23 @@ const LoanRepayment = () => {
   const getRepaymentStatusBadge = (status: string) => {
     switch (status) {
       case 'pending':
-        return <span className="px-2 py-1 rounded-full text-xs bg-yellow-500/20 text-yellow-600">Pending</span>;
+        return (
+          <span className="px-2 py-1 rounded-full text-xs bg-yellow-500/20 text-yellow-600">
+            {t('loan.statusPending')}
+          </span>
+        );
       case 'approved':
-        return <span className="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-600">Approved</span>;
+        return (
+          <span className="px-2 py-1 rounded-full text-xs bg-green-500/20 text-green-600">
+            Approved
+          </span>
+        );
       case 'rejected':
-        return <span className="px-2 py-1 rounded-full text-xs bg-red-500/20 text-red-600">Rejected</span>;
+        return (
+          <span className="px-2 py-1 rounded-full text-xs bg-red-500/20 text-red-600">
+            Rejected
+          </span>
+        );
       default:
         return null;
     }
@@ -195,10 +215,14 @@ const LoanRepayment = () => {
 
   const getRepaymentTypeLabel = (type: string) => {
     switch (type) {
-      case 'partial': return 'Partial Repayment';
-      case 'early_full': return 'Early Full Repayment';
-      case 'full': return 'Full Repayment';
-      default: return type;
+      case 'partial':
+        return t('loan.partialRepayment');
+      case 'early_full':
+        return t('loan.earlyFullRepayment');
+      case 'full':
+        return t('loan.fullRepaymentOnDue');
+      default:
+        return type;
     }
   };
 
@@ -207,17 +231,14 @@ const LoanRepayment = () => {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <CreditCard className="w-5 h-5 text-primary" />
-          <h3 className="font-semibold text-lg">Loan Repayment</h3>
+          <h3 className="font-semibold text-lg">{t('loan.repaymentTitle')}</h3>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => setShowHistory(!showHistory)}
-        >
+        <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)}>
           <History className="w-4 h-4 mr-1" />
-          {showHistory ? 'Hide History' : 'Show History'}
+          {showHistory ? t('loan.hideHistory') : t('loan.showHistory')}
         </Button>
       </div>
+
 
       {/* Total Remaining Balance Summary */}
       {activeLoans.length > 0 && (
