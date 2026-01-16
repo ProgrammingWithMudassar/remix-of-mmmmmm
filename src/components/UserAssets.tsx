@@ -1,8 +1,9 @@
+import React from 'react';
 import { useAssets } from '@/contexts/AssetsContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Wallet } from 'lucide-react';
 
-const UserAssets = () => {
+const UserAssets = React.forwardRef<HTMLDivElement>((_, ref) => {
   const { t } = useLanguage();
   const { assets } = useAssets();
 
@@ -33,6 +34,8 @@ const UserAssets = () => {
       </div>
     </div>
   );
-};
+});
+
+UserAssets.displayName = 'UserAssets';
 
 export default UserAssets;

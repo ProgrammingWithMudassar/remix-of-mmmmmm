@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   ChevronRight, 
@@ -26,7 +26,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useLoan } from '@/contexts/LoanContext';
 import { toast } from 'sonner';
 
-const Mining = () => {
+const Mining = React.forwardRef<HTMLDivElement>((_, ref) => {
   const [selectedTier, setSelectedTier] = useState<1 | 2 | 3 | null>(null);
   const [investAmount, setInvestAmount] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -489,6 +489,8 @@ const Mining = () => {
       <BottomNav />
     </div>
   );
-};
+});
+
+Mining.displayName = 'Mining';
 
 export default Mining;
