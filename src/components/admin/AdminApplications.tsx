@@ -202,7 +202,11 @@ const AdminApplications = () => {
 
           kycRecords.forEach(kyc => {
             const profile = profiles?.find(p => p.user_id === kyc.user_id);
-            const verificationLevel = kyc.verification_level || 'primary';
+            // Determine verification level - check if it's advanced by presence of images OR explicit level
+            const hasAdvancedImages = kyc.front_image_url || kyc.back_image_url || kyc.selfie_url;
+            const rawLevel = kyc.verification_level || 'primary';
+            // If has images, treat as advanced; if 'basic', treat as 'primary'
+            const verificationLevel = hasAdvancedImages ? 'advanced' : (rawLevel === 'basic' ? 'primary' : rawLevel);
             const levelLabel = verificationLevel === 'advanced' ? 'Advanced' : 'Primary';
             allApplications.push({
               id: kyc.id,
