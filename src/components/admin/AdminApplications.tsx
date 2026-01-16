@@ -50,6 +50,7 @@ interface Application {
   real_name?: string;
   id_type?: string;
   id_number?: string;
+  verification_level?: string;
   // Repayment specific
   loan_id?: string;
   repayment_type?: string;
@@ -201,6 +202,8 @@ const AdminApplications = () => {
 
           kycRecords.forEach(kyc => {
             const profile = profiles?.find(p => p.user_id === kyc.user_id);
+            const verificationLevel = kyc.verification_level || 'primary';
+            const levelLabel = verificationLevel === 'advanced' ? 'Advanced' : 'Primary';
             allApplications.push({
               id: kyc.id,
               user_id: kyc.user_id,
@@ -208,7 +211,7 @@ const AdminApplications = () => {
               type: 'kyc',
               status: kyc.status,
               created_at: kyc.created_at,
-              details: `姓名: ${kyc.real_name}, 证件: ${kyc.id_type}`,
+              details: `[${levelLabel}] Name: ${kyc.real_name}, ID: ${kyc.id_type}`,
               table_name: 'kyc_records',
               front_image_url: kyc.front_image_url || undefined,
               back_image_url: kyc.back_image_url || undefined,
@@ -216,6 +219,7 @@ const AdminApplications = () => {
               real_name: kyc.real_name,
               id_type: kyc.id_type,
               id_number: kyc.id_number,
+              verification_level: verificationLevel,
             });
           });
         }
@@ -607,88 +611,111 @@ const AdminApplications = () => {
       <Dialog open={kycDetailModal.open} onOpenChange={(open) => !open && setKycDetailModal({ open: false, app: null })}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>实名认证详情</DialogTitle>
+            <DialogTitle>
+              KYC Details - {kycDetailModal.app?.verification_level === 'advanced' ? 'Advanced Verification' : 'Primary Verification'}
+            </DialogTitle>
           </DialogHeader>
           {kycDetailModal.app && (
             <div className="space-y-4 py-4">
+              <div className="flex items-center gap-2 mb-4">
+                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                  kycDetailModal.app.verification_level === 'advanced' 
+                    ? 'bg-purple-500/20 text-purple-600 dark:text-purple-400' 
+                    : 'bg-blue-500/20 text-blue-600 dark:text-blue-400'
+                }`}>
+                  {kycDetailModal.app.verification_level === 'advanced' ? 'Advanced Verification' : 'Primary Verification'}
+                </span>
+              </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-sm text-muted-foreground">真实姓名</p>
+                  <p className="text-sm text-muted-foreground">Full Name</p>
                   <p className="font-medium">{kycDetailModal.app.real_name}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-muted-foreground">证件类型</p>
+                  <p className="text-sm text-muted-foreground">ID Type</p>
                   <p className="font-medium">{kycDetailModal.app.id_type}</p>
                 </div>
                 <div className="col-span-2">
-                  <p className="text-sm text-muted-foreground">证件号码</p>
+                  <p className="text-sm text-muted-foreground">ID Number</p>
                   <p className="font-medium">{kycDetailModal.app.id_number}</p>
                 </div>
               </div>
               
-              <div className="space-y-3">
-                <p className="text-sm font-medium">证件照片</p>
-                <div className="grid grid-cols-3 gap-4">
-                  {kycDetailModal.app.front_image_url ? (
-                    <div 
-                      className="border rounded-lg p-2 cursor-pointer hover:border-primary transition-colors"
-                      onClick={() => openImagePreview(kycDetailModal.app!.front_image_url!, '证件正面')}
-                    >
-                      <img 
-                        src={kycDetailModal.app.front_image_url} 
-                        alt="证件正面"
-                        className="w-full h-24 object-cover rounded"
-                      />
-                      <p className="text-xs text-center mt-1 text-muted-foreground">证件正面</p>
-                    </div>
-                  ) : (
-                    <div className="border rounded-lg p-2 flex items-center justify-center h-32 bg-muted">
-                      <p className="text-xs text-muted-foreground">未上传</p>
-                    </div>
-                  )}
-                  
-                  {kycDetailModal.app.back_image_url ? (
-                    <div 
-                      className="border rounded-lg p-2 cursor-pointer hover:border-primary transition-colors"
-                      onClick={() => openImagePreview(kycDetailModal.app!.back_image_url!, '证件背面')}
-                    >
-                      <img 
-                        src={kycDetailModal.app.back_image_url} 
-                        alt="证件背面"
-                        className="w-full h-24 object-cover rounded"
-                      />
-                      <p className="text-xs text-center mt-1 text-muted-foreground">证件背面</p>
-                    </div>
-                  ) : (
-                    <div className="border rounded-lg p-2 flex items-center justify-center h-32 bg-muted">
-                      <p className="text-xs text-muted-foreground">未上传</p>
-                    </div>
-                  )}
-                  
-                  {kycDetailModal.app.selfie_url ? (
-                    <div 
-                      className="border rounded-lg p-2 cursor-pointer hover:border-primary transition-colors"
-                      onClick={() => openImagePreview(kycDetailModal.app!.selfie_url!, '手持证件照')}
-                    >
-                      <img 
-                        src={kycDetailModal.app.selfie_url} 
-                        alt="手持证件照"
-                        className="w-full h-24 object-cover rounded"
-                      />
-                      <p className="text-xs text-center mt-1 text-muted-foreground">手持证件照</p>
-                    </div>
-                  ) : (
-                    <div className="border rounded-lg p-2 flex items-center justify-center h-32 bg-muted">
-                      <p className="text-xs text-muted-foreground">未上传</p>
-                    </div>
-                  )}
+              {/* Only show document photos section for advanced verification */}
+              {kycDetailModal.app.verification_level === 'advanced' && (
+                <div className="space-y-3">
+                  <p className="text-sm font-medium">ID Document Photos</p>
+                  <div className="grid grid-cols-3 gap-4">
+                    {kycDetailModal.app.front_image_url ? (
+                      <div 
+                        className="border rounded-lg p-2 cursor-pointer hover:border-primary transition-colors"
+                        onClick={() => openImagePreview(kycDetailModal.app!.front_image_url!, 'ID Front')}
+                      >
+                        <img 
+                          src={kycDetailModal.app.front_image_url} 
+                          alt="ID Front"
+                          className="w-full h-24 object-cover rounded"
+                        />
+                        <p className="text-xs text-center mt-1 text-muted-foreground">ID Front</p>
+                      </div>
+                    ) : (
+                      <div className="border rounded-lg p-2 flex items-center justify-center h-32 bg-muted">
+                        <p className="text-xs text-muted-foreground">Not Uploaded</p>
+                      </div>
+                    )}
+                    
+                    {kycDetailModal.app.back_image_url ? (
+                      <div 
+                        className="border rounded-lg p-2 cursor-pointer hover:border-primary transition-colors"
+                        onClick={() => openImagePreview(kycDetailModal.app!.back_image_url!, 'ID Back')}
+                      >
+                        <img 
+                          src={kycDetailModal.app.back_image_url} 
+                          alt="ID Back"
+                          className="w-full h-24 object-cover rounded"
+                        />
+                        <p className="text-xs text-center mt-1 text-muted-foreground">ID Back</p>
+                      </div>
+                    ) : (
+                      <div className="border rounded-lg p-2 flex items-center justify-center h-32 bg-muted">
+                        <p className="text-xs text-muted-foreground">Not Uploaded</p>
+                      </div>
+                    )}
+                    
+                    {kycDetailModal.app.selfie_url ? (
+                      <div 
+                        className="border rounded-lg p-2 cursor-pointer hover:border-primary transition-colors"
+                        onClick={() => openImagePreview(kycDetailModal.app!.selfie_url!, 'Selfie with ID')}
+                      >
+                        <img 
+                          src={kycDetailModal.app.selfie_url} 
+                          alt="Selfie with ID"
+                          className="w-full h-24 object-cover rounded"
+                        />
+                        <p className="text-xs text-center mt-1 text-muted-foreground">Selfie with ID</p>
+                      </div>
+                    ) : (
+                      <div className="border rounded-lg p-2 flex items-center justify-center h-32 bg-muted">
+                        <p className="text-xs text-muted-foreground">Not Uploaded</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
+              
+              {/* Show note for primary verification */}
+              {kycDetailModal.app.verification_level !== 'advanced' && (
+                <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                  <p className="text-sm text-blue-600 dark:text-blue-400">
+                    This is a Primary Verification request. Only name and ID number verification required.
+                  </p>
+                </div>
+              )}
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setKycDetailModal({ open: false, app: null })}>
-              关闭
+              Close
             </Button>
             <Button
               className="bg-green-500 hover:bg-green-600"
@@ -701,7 +728,7 @@ const AdminApplications = () => {
               disabled={isSubmitting}
             >
               <Check className="w-4 h-4 mr-1" />
-              通过
+              Approve
             </Button>
             <Button
               variant="destructive"
@@ -714,7 +741,7 @@ const AdminApplications = () => {
               disabled={isSubmitting}
             >
               <X className="w-4 h-4 mr-1" />
-              拒绝
+              Reject
             </Button>
           </DialogFooter>
         </DialogContent>

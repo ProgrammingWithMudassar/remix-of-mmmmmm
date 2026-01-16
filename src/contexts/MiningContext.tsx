@@ -19,8 +19,8 @@ export interface MiningInvestment {
 
 export const MINING_TIERS = [
   { tier: 1, lockDays: 15, dailyRate: 1, minAmount: 3000, label: '15 Days Lock' },
-  { tier: 2, lockDays: 30, dailyRate: 1.5, minAmount: 7000, label: '30 Days Lock' },
-  { tier: 3, lockDays: 60, dailyRate: 2, minAmount: 10000, label: '60 Days Lock' },
+  { tier: 2, lockDays: 30, dailyRate: 1.25, minAmount: 7000, label: '30 Days Lock' },
+  { tier: 3, lockDays: 60, dailyRate: 1.5, minAmount: 10000, label: '60 Days Lock' },
 ] as const;
 
 interface MiningContextType {
