@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -44,6 +44,7 @@ export const LoanProvider = ({ children }: { children: ReactNode }) => {
   const [loans, setLoans] = useState<Loan[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { user, isAuthenticated } = useAuth();
+  const overdueCheckRef = useRef<Set<string>>(new Set());
 
   const refreshLoans = useCallback(async () => {
     if (!isAuthenticated || !user) {
@@ -103,6 +104,80 @@ export const LoanProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     refreshLoans();
   }, [refreshLoans]);
+
+  // Check for overdue loans and deduct credit score
+  const checkOverdueLoansForCreditDeduction = useCallback(async () => {
+    if (!user) return;
+
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+
+    for (const loan of loans) {
+      if (loan.status !== 'approved' && loan.status !== 'overdue') continue;
+
+      const borrowDate = new Date(loan.borrowDate);
+      const daysElapsed = Math.floor((now.getTime() - borrowDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      // Only deduct after day 15
+      if (daysElapsed <= 15) continue;
+
+      const daysOverdue = daysElapsed - 15;
+      const checkKey = `${loan.id}_${today}`;
+
+      // Skip if already checked today
+      if (overdueCheckRef.current.has(checkKey)) continue;
+
+      // Check if we already deducted for this loan today
+      const { data: existingLog } = await supabase
+        .from('credit_score_logs')
+        .select('id')
+        .eq('user_id', user.id)
+        .ilike('reason', `%Loan ${loan.id.slice(0, 8)}%overdue%`)
+        .gte('created_at', today)
+        .maybeSingle();
+
+      if (existingLog) {
+        overdueCheckRef.current.add(checkKey);
+        continue;
+      }
+
+      // Get current credit score
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('credit_score')
+        .eq('user_id', user.id)
+        .single();
+
+      const currentScore = profile?.credit_score ?? 100;
+      const deduction = 2; // 2 points per day
+      const newScore = Math.max(0, currentScore - deduction);
+
+      // Update profile
+      await supabase
+        .from('profiles')
+        .update({ credit_score: newScore })
+        .eq('user_id', user.id);
+
+      // Log the change
+      await supabase.from('credit_score_logs').insert({
+        user_id: user.id,
+        previous_score: currentScore,
+        new_score: newScore,
+        change_amount: -deduction,
+        reason: `Loan ${loan.id.slice(0, 8)} is ${daysOverdue} days overdue (after day 15)`,
+      });
+
+      overdueCheckRef.current.add(checkKey);
+      console.log(`Credit score deducted: -${deduction} for overdue loan ${loan.id.slice(0, 8)}`);
+    }
+  }, [user, loans]);
+
+  // Run overdue check when loans change
+  useEffect(() => {
+    if (loans.length > 0 && user) {
+      checkOverdueLoansForCreditDeduction();
+    }
+  }, [loans, user, checkOverdueLoansForCreditDeduction]);
 
   const calculateOwed = (loan: Loan) => {
     const now = new Date();
