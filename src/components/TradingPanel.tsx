@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { TrendingUp, TrendingDown, Clock, DollarSign, Percent } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCreditScore } from '@/hooks/useCreditScore';
 
 interface TradingPanelProps {
   symbol: string;
@@ -37,6 +38,7 @@ const TradingPanel = ({ symbol, currentPrice }: TradingPanelProps) => {
   const { getBalance, updateBalance, refreshAssets } = useAssets();
   const { addTrade } = useTradeHistory();
   const { user } = useAuth();
+  const { checkTradeLimit, recordTradeAttempt, creditScore } = useCreditScore();
   const [direction, setDirection] = useState<'long' | 'short'>('long');
   const [usdtAmount, setUsdtAmount] = useState('');
   const [selectedTime, setSelectedTime] = useState(TIME_OPTIONS[0]);
@@ -228,6 +230,16 @@ const TradingPanel = ({ symbol, currentPrice }: TradingPanelProps) => {
       toast.error('Your account is frozen. Trading is disabled.');
       return;
     }
+
+    // Check trade frequency limit (3+ times per hour = 10 points deduction)
+    const canTrade = await checkTradeLimit();
+    if (!canTrade) {
+      toast.error('交易频率过高！信用分已扣除10分。请稍后再试。');
+      return;
+    }
+
+    // Record this trade attempt
+    await recordTradeAttempt();
 
     const usdtNum = parseFloat(usdtAmount);
 
