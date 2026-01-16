@@ -188,8 +188,8 @@ const Account = () => {
   }, [user?.id]);
   const totalAssets = CRYPTO_ASSETS.reduce((total, crypto) => {
     const balance = getBalance(crypto.symbol);
-    const priceData = getPrice(crypto.symbol);
-    const price = priceData?.price || 0;
+    // USDT is pegged to USD, so its price is always 1
+    const price = crypto.symbol === 'USDT' ? 1 : (getPrice(crypto.symbol)?.price || 0);
     return total + (balance * price);
   }, 0);
 
