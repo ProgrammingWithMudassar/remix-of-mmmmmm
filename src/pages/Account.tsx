@@ -421,7 +421,7 @@ const Account = React.forwardRef<HTMLDivElement>((_, ref) => {
               <Star className="w-3 h-3" />
               Credit Score
             </p>
-            <p className={`text-2xl font-semibold ${creditScore >= 100 ? 'text-[hsl(145,60%,45%)]' : 'text-[hsl(0,70%,55%)]'}`}>
+            <p className={`text-xl font-bold tabular-nums tracking-tight ${creditScore >= 100 ? 'text-[hsl(145,60%,45%)]' : 'text-[hsl(0,70%,55%)]'}`}>
               {creditScore}/100
             </p>
           </div>
