@@ -366,7 +366,7 @@ const Account = React.forwardRef<HTMLDivElement>((_, ref) => {
 
     return (
       <div className="flex items-center gap-2 text-sm text-muted-foreground mb-6">
-        <Link to="/" className="hover:text-foreground">MMTrade</Link>
+        <Link to="/" className="hover:text-foreground">MetaMaskTrade</Link>
         <ChevronRight className="w-4 h-4" />
         <button 
           onClick={() => setCurrentView('overview')}
